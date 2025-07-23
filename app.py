@@ -8,11 +8,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from twilio.rest import Client
 
 app = Flask(__name__)
+app.secret_key = 'blackrock_secret_key_8583'
+logging.basicConfig(level=logging.INFO)
+
 @app.context_processor
 def inject_now():
     return {'now': datetime.now}
-app.secret_key = 'blackrock_secret_key_8583'
-logging.basicConfig(level=logging.INFO)
 
 # Constants
 USERNAME = "blackrockadmin"
@@ -31,7 +32,7 @@ client = Client(TWILIO_SID, TWILIO_AUTH_TOKEN)
 # Ensure password.json exists
 if not os.path.exists(PASSWORD_FILE):
     with open(PASSWORD_FILE, "w") as f:
-        json.dump({"password": generate_password_hash(Br_3339)}, f)
+        json.dump({"admin_username": USERNAME, "admin_password": DEFAULT_PASSWORD}, f)
 
 # Ensure transaction log
 if not os.path.exists(TX_LOG):
@@ -46,12 +47,12 @@ def check_password(input_username, input_password):
         input_password == data.get("admin_password")
     )
 
-def set_password(new_username, new_password):
+def set_password(new_password):
+    with open(PASSWORD_FILE) as f:
+        data = json.load(f)
+    data["admin_password"] = new_password
     with open(PASSWORD_FILE, "w") as f:
-        json.dump({
-            "admin_username": new_username,
-            "admin_password": new_password
-        }, f, indent=2)
+        json.dump(data, f, indent=2)
 
 def login_required(f):
     @wraps(f)
@@ -109,23 +110,9 @@ def login():
     if request.method == 'POST':
         user = request.form.get('username')
         passwd = request.form.get('password')
-
         if check_password(user, passwd):
             session['logged_in'] = True
             return redirect(url_for('protocol'))
-        flash("Invalid username or password.")
-    return render_template('login.html')
-
-        # Load stored credentials
-        with open(PASSWORD_FILE) as f:
-            stored = json.load(f)
-            stored_user = stored.get("username", USERNAME)
-            stored_pass = stored.get("password")
-
-        if user == stored_user and passwd == stored_pass:
-            session['logged_in'] = True
-            return redirect(url_for('protocol'))
-
         flash("Invalid username or password.")
     return render_template('login.html')
 
@@ -134,14 +121,16 @@ def logout():
     session.clear()
     flash("You have been logged out.")
     return redirect(url_for('login'))
-    
+
 @app.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
     if request.method == 'POST':
         current = request.form['current']
         new = request.form['new']
-        if not check_password(current):
+        with open(PASSWORD_FILE) as f:
+            stored = json.load(f)
+        if current != stored['admin_password']:
             return render_template('change_password.html', error="Current password incorrect.")
         set_password(new)
         return render_template('change_password.html', success="Password changed.")
