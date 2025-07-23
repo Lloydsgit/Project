@@ -1,22 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Transaction Success</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <title>Transaction Success</title>
 </head>
 <body>
-  <div class="container center-box">
-    <h2>✅ Transaction Successful</h2>
-    <p>Txn ID: {{ txn_id }}</p>
+    <h2>Transaction Successful</h2>
+    <p>Transaction ID: {{ txn_id }}</p>
+    <p>ARN: {{ arn }}</p>
     <p>Amount: {{ amount }}</p>
+    <p>Card: **** **** **** {{ pan }}</p>
     <p>Time: {{ timestamp }}</p>
-    <p>Card: **** {{ pan }}</p>
-    <div class="btn-group">
-      <a href="{{ url_for('receipt_pdf') }}"><button>📄 Download Receipt (PDF)</button></a>
-      <a href="{{ url_for('receipt') }}"><button>🖨 View Receipt</button></a>
-      <a href="{{ url_for('protocol') }}"><button>🔁 New Transaction</button></a>
-    </div>
-  </div>
+    <a href="{{ url_for('receipt') }}">View Receipt</a><br>
+    <a href="{{ url_for('receipt_pdf') }}">Download PDF Receipt</a>
 </body>
 </html>
