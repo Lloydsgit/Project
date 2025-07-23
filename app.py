@@ -8,6 +8,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from twilio.rest import Client
 
 app = Flask(__name__)
+@app.context_processor
+def inject_now():
+    return {'now': datetime.now}
 app.secret_key = 'blackrock_secret_key_8583'
 logging.basicConfig(level=logging.INFO)
 
