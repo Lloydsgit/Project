@@ -37,11 +37,11 @@ if not os.path.exists(TX_LOG):
 
 def check_password(raw):
     with open(PASSWORD_FILE) as f:
-        return check_password_hash(json.load(f)['password'], raw)
+        return json.load(f)['password'] == raw
 
 def set_password(newpass):
     with open(PASSWORD_FILE, "w") as f:
-        json.dump({"password": generate_password_hash(newpass)}, f)
+        json.dump({"password": newpass}, f)
 
 def login_required(f):
     @wraps(f)
