@@ -46,9 +46,12 @@ def check_password(input_username, input_password):
         input_password == data.get("admin_password")
     )
 
-def set_password(newpass):
+def set_password(new_username, new_password):
     with open(PASSWORD_FILE, "w") as f:
-        json.dump({"password": newpass}, f)
+        json.dump({
+            "admin_username": new_username,
+            "admin_password": new_password
+        }, f, indent=2)
 
 def login_required(f):
     @wraps(f)
