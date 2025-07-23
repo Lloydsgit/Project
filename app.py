@@ -28,7 +28,7 @@ client = Client(TWILIO_SID, TWILIO_AUTH_TOKEN)
 # Ensure password.json exists
 if not os.path.exists(PASSWORD_FILE):
     with open(PASSWORD_FILE, "w") as f:
-        json.dump({"password": generate_password_hash(DEFAULT_PASSWORD)}, f)
+        json.dump({"password": generate_password_hash(Br_3339)}, f)
 
 # Ensure transaction log
 if not os.path.exists(TX_LOG):
