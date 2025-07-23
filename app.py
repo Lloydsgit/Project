@@ -27,7 +27,6 @@ CONFIG = load_config()
 TWILIO_SID = "ACdb98fb2972c2ed066994ddef56de1b6f"
 TWILIO_AUTH_TOKEN = "803463ddd413bc4d7375ac780d439195"
 TWILIO_NUMBER = "+13515297285"
-client = Client(TWILIO_SID, TWILIO_AUTH_TOKEN)
 
 # Ensure password.json exists
 if not os.path.exists(PASSWORD_FILE):
