@@ -8,3 +8,4 @@ eth-account
 requests
 fpdf
 xhtml2pdf
+Twilio
