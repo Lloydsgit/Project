@@ -38,9 +38,13 @@ if not os.path.exists(TX_LOG):
     with open(TX_LOG, "w") as f:
         json.dump([], f)
 
-def check_password(raw):
+def check_password(input_username, input_password):
     with open(PASSWORD_FILE) as f:
-        return json.load(f)['password'] == raw
+        data = json.load(f)
+    return (
+        input_username == data.get("admin_username") and
+        input_password == data.get("admin_password")
+    )
 
 def set_password(newpass):
     with open(PASSWORD_FILE, "w") as f:
@@ -171,6 +175,18 @@ FIELD_39_RESPONSES = {
     "91": "Issuer Inoperative",
     "92": "Invalid Terminal Protocol"
 }
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user = request.form.get('username')
+        passwd = request.form.get('password')
+
+        if check_password(user, passwd):
+            session['logged_in'] = True
+            return redirect(url_for('protocol'))
+        flash("Invalid username or password.")
+    return render_template('login.html')
 
 @app.route('/protocol', methods=['GET', 'POST'])
 @login_required
