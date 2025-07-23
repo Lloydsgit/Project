@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Enter Auth Code</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <title>Authorization Code</title>
 </head>
 <body>
-  <div class="container center-box">
-    <h2>Authorization Code</h2>
+    <h2>Enter Authorization Code</h2>
+    {% if warning %}
+        <p style="color:red;">{{ warning }}</p>
+    {% endif %}
     <form method="POST">
-      <input type="text" name="auth_code" placeholder="Enter Auth Code" required><br>
-      <button type="submit">Submit</button>
+        <input type="text" name="auth" placeholder="Authorization Code" required><br><br>
+        <button type="submit">Submit Transaction</button>
     </form>
-  </div>
 </body>
 </html>
