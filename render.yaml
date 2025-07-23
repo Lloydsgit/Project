@@ -1,18 +1,42 @@
 services:
-  - type: web
-    name: blackrock-web
+  - type: web # For app.py, as it's the main entry point (terminal UI)
+    name: card-terminal-app
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:10000
-    plan: free
+    startCommand: gunicorn app:app # Use gunicorn for production Flask apps
     envVars:
-      - key: FLASK_ENV
-        value: production
       - key: PORT
-        value: 10000
+        value: 10000 # Your Flask app's public port
+      - key: ISO_SERVER_URL
+        value: http://iso-server-service:9000 # Connect to the ISO server service by its name
+      - key: CRYPTO_SERVER_URL
+        value: http://crypto-payout-service:9001 # Connect to the Crypto payout service by its name
+      # No Twilio environment variables needed if app.py no longer uses it
 
-  - type: worker
-    name: iso8583-server
+  - type: private # For iso8583_server.py, as it's internal and connects externally
+    name: iso-server-service
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python iso8583_server.py
+    startCommand: gunicorn iso8583_server:app # Run the Flask app within iso8583_server.py
+    envVars:
+      - key: PORT
+        value: 9000 # Internal port for this service
+      - key: VISA_MC_ISO_HOST
+        value: # <<< VERY IMPORTANT: Your actual ISO host provided by Visa/MC >>>
+      - key: VISA_MC_ISO_PORT
+        value: # <<< VERY IMPORTANT: Your actual ISO port provided by Visa/MC >>>
+      # Add any other sensitive config for iso8583_server.py
+
+  - type: private # For crypto_payout_service.py, as it's internal and connects externally to crypto APIs
+    name: crypto-payout-service
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn crypto_payout_service:app # Run the Flask app within crypto_payout_service.py
+    envVars:
+      - key: PORT
+        value: 9001 # Internal port for this service
+      - key: CRYPTO_API_KEY
+        value: # <<< VERY IMPORTANT: Your actual Crypto API Key >>>
+      - key: CRYPTO_SECRET
+        value: # <<< VERY IMPORTANT: Your actual Crypto API Secret >>>
+      # Add any other sensitive config for crypto_payout_service.py
