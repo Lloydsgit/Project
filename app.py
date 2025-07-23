@@ -99,9 +99,17 @@ def login():
     if request.method == 'POST':
         user = request.form.get('username')
         passwd = request.form.get('password')
-        if user == USERNAME and check_password(passwd):
+
+        # Load stored credentials
+        with open(PASSWORD_FILE) as f:
+            stored = json.load(f)
+            stored_user = stored.get("username", USERNAME)
+            stored_pass = stored.get("password")
+
+        if user == stored_user and passwd == stored_pass:
             session['logged_in'] = True
             return redirect(url_for('protocol'))
+
         flash("Invalid username or password.")
     return render_template('login.html')
 
