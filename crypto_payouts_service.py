@@ -1,92 +1,162 @@
-from flask import Flask, request, jsonify
 import os
 import hashlib
-import random # For dummy tx_hash generation
+import random
+import requests # Added for making HTTP requests to crypto APIs
+import json # Added for handling JSON data
 
-# This file is designed to run as a separate service.
-# It handles the crypto payout logic.
+# This file is now a MODULE, not a Flask application.
+# It contains functions for crypto payout logic.
 
-app = Flask(__name__)
+# Crypto API Keys (PLACEHOLDERS! Use environment variables in app.py and pass them)
+# These are crucial for real payouts and MUST be securely managed.
+DEFAULT_CRYPTO_API_KEY = os.environ.get('CRYPTO_API_KEY', 'YOUR_REAL_CRYPTO_API_KEY')
+DEFAULT_CRYPTO_SECRET = os.environ.get('CRYPTO_SECRET', 'YOUR_REAL_CRYPTO_SECRET')
 
-# Internal server configuration for this service
-INTERNAL_HOST = '0.0.0.0'
-INTERNAL_PORT = int(os.environ.get('PORT', 9001)) # Default to 9001 for local development
+# Hypothetical Crypto Exchange API Endpoint (REPLACE WITH REAL ENDPOINT)
+# This would be the base URL for your chosen exchange's API for withdrawals/transfers.
+CRYPTO_EXCHANGE_API_URL = os.environ.get('CRYPTO_EXCHANGE_API_URL', 'https://api.hypotheticalexchange.com/v1')
 
-# Crypto API Keys (PLACEHOLDERS! Use environment variables!)
-CRYPTO_API_KEY = os.environ.get('CRYPTO_API_KEY', 'your_crypto_api_key')
-CRYPTO_SECRET = os.environ.get('CRYPTO_SECRET', 'your_crypto_secret')
+def load_config():
+    """
+    Loads configuration relevant to crypto payouts.
+    In a real scenario, this would load sensitive config securely.
+    """
+    print("ISO8583_Crypto Module: Loading configuration...")
+    return {
+        "crypto_api_key": DEFAULT_CRYPTO_API_KEY,
+        "crypto_secret": DEFAULT_CRYPTO_SECRET,
+        "crypto_exchange_api_url": CRYPTO_EXCHANGE_API_URL
+    }
 
-# --- Placeholder Crypto functions ---
-# In a real scenario, this would involve integrating with a crypto exchange API
-# (e.g., Binance, Coinbase) or a web3 library for direct blockchain interaction.
 def convert_fiat_to_crypto(amount_fiat, fiat_currency, crypto_currency_target):
     """
-    DUMMY: Simulates converting fiat to crypto.
-    Returns the equivalent crypto amount.
+    CONCEPTUAL: Converts fiat amount to equivalent crypto amount.
+    In a real system, this would involve querying real-time exchange rates
+    from a reliable source (e.g., the exchange's API, or a market data provider).
     """
-    print(f"CryptoService: DUMMY: Converting {amount_fiat} {fiat_currency} to {crypto_currency_target}...")
-    # This is a dummy conversion. Real-world rates vary.
+    print(f"ISO8583_Crypto Module: Converting {amount_fiat} {fiat_currency} to {crypto_currency_target}...")
+    # This is a dummy conversion. Real-world rates vary and need live data.
     if crypto_currency_target == "USDT":
         return amount_fiat * 0.98 # Simulate a slight fee/spread
     elif crypto_currency_target == "ETH":
         return amount_fiat * 0.0003
-    return amount_fiat # Fallback
+    print("ISO8583_Crypto Module: WARNING: Using dummy fiat-to-crypto conversion.")
+    return amount_fiat # Fallback or if amount is already crypto
+
+def send_crypto_to_wallet(wallet_address, crypto_amount, payout_type, api_key, api_secret, api_url):
+    """
+    REAL PAYOUT CONCEPT: Sends crypto to a specified wallet address using a hypothetical exchange API.
+    This function needs to be adapted to the specific API of your chosen exchange.
+    """
+    print(f"ISO8583_Crypto Module: Attempting to send {crypto_amount} {payout_type} to {wallet_address} via {api_url}...")
     
-def send_crypto_to_wallet(wallet_address, crypto_amount, crypto_currency):
-    """
-    DUMMY: Simulates sending crypto to a wallet.
-    Returns a dummy transaction hash.
-    """
-    print(f"CryptoService: DUMMY: Sending {crypto_amount} {crypto_currency} to {wallet_address}...")
-    # This is where your actual API calls to a crypto exchange or web3.py would go.
-    # You'd manage gas fees, network selection (ERC20 vs TRC20), etc.
-    if crypto_currency == "ERC20" and not wallet_address.startswith("0x"):
+    # Basic wallet address validation
+    if payout_type == "ERC20" and not wallet_address.startswith("0x"):
         raise ValueError("Invalid ERC20 wallet address format (must start with 0x)")
-    if crypto_currency == "TRC20" and not wallet_address.startswith("T"):
+    if payout_type == "TRC20" and not wallet_address.startswith("T"):
         raise ValueError("Invalid TRC20 wallet address format (must start with T)")
     
-    # Simulate success with a random hash
-    tx_hash = hashlib.sha256(f"{wallet_address}{crypto_amount}{crypto_currency}{random.random()}".encode()).hexdigest()
-    return f"0x{tx_hash}"[:66] # Ethereum-like hash format (66 chars including 0x)
+    # --- This is where the actual API call to your crypto exchange happens ---
+    # The exact endpoint, headers, and payload will vary GREATLY by exchange.
+    # This is a GENERIC EXAMPLE.
 
-@app.route('/payout', methods=['POST'])
-# This is the API endpoint that app.py will call via HTTP POST.
-def handle_payout():
-    """
-    Receives payout request from app.py, performs crypto conversion/transfer,
-    and returns payout status.
-    """
-    data = request.json
-    print(f"CryptoService: Received payout request from app.py: {data}")
+    headers = {
+        "Content-Type": "application/json",
+        "X-API-KEY": api_key, # Some exchanges use headers for API keys
+        # Other headers like 'X-SIGNATURE', 'X-TIMESTAMP' might be required
+        # and involve cryptographic signing of the payload.
+    }
 
-    transaction_id = data.get("transaction_id")
-    amount = data.get("amount")
-    currency = data.get("currency")
-    payout_type = data.get("payout_type") # e.g., 'ERC20', 'TRC20'
-    merchant_wallet = data.get("merchant_wallet")
-
-    if not all([transaction_id, amount, currency, payout_type, merchant_wallet]):
-        print("CryptoService: Missing required payout data.")
-        return jsonify({"status": "failed", "message": "Missing required payout data"}), 400
+    payload = {
+        "currency": "USDT", # Or ETH, TRX, etc. based on your needs
+        "amount": str(crypto_amount), # Amount often sent as string to preserve precision
+        "address": wallet_address,
+        "network": payout_type, # e.g., "ERC20", "TRC20"
+        "clientOrderId": f"POS_TXN_{random.randint(1000000, 9999999)}" # Unique ID for your withdrawal
+    }
 
     try:
-        # Determine target crypto currency (e.g., USDT on ERC20/TRC20)
-        # This mapping might be more complex in a real system.
-        # For simplicity, we assume 'amount' is already the crypto equivalent.
-        # If 'amount' is fiat, you'd use convert_fiat_to_crypto here.
+        # Example: POST request to a withdrawal/send endpoint
+        response = requests.post(f"{api_url}/withdraw", headers=headers, data=json.dumps(payload), timeout=60)
+        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        
+        response_data = response.json()
+        print(f"ISO8583_Crypto Module: Exchange API Response: {response_data}")
+
+        # Parse the response to get the transaction hash.
+        # The key for the transaction hash (tx_hash) will vary by exchange.
+        tx_hash = response_data.get("withdrawalId") or response_data.get("txid") or response_data.get("hash")
+        if not tx_hash:
+            raise Exception(f"Failed to get transaction hash from exchange response: {response_data}")
+
+        return tx_hash # Return the real transaction hash
+        
+    except requests.exceptions.Timeout:
+        raise Exception("Crypto exchange API request timed out.")
+    except requests.exceptions.ConnectionError:
+        raise Exception("Could not connect to crypto exchange API.")
+    except requests.exceptions.RequestException as e:
+        # Catch specific HTTP errors from the exchange API
+        error_message = f"Crypto exchange API error: {e.response.status_code} - {e.response.text}" if e.response else str(e)
+        raise Exception(error_message)
+    except Exception as e:
+        # Catch any other general errors
+        raise Exception(f"Unexpected error during crypto payout: {e}")
+
+def perform_crypto_payout(transaction_id, amount, currency, payout_type, merchant_wallet):
+    """
+    Performs the crypto payout. This function will be called directly by app.py.
+    It orchestrates the call to send_crypto_to_wallet.
+    """
+    print(f"ISO8583_Crypto Module: Initiating crypto payout for TXN ID: {transaction_id}")
+
+    # Load API keys and URL from configuration
+    config = load_config()
+    api_key = config.get("crypto_api_key")
+    api_secret = config.get("crypto_secret")
+    api_url = config.get("crypto_exchange_api_url")
+
+    if not api_key or not api_secret or not api_url:
+        raise Exception("Crypto API credentials or URL not configured.")
+
+    try:
+        # Assuming 'amount' is already the crypto equivalent for simplicity.
+        # In a real system, you'd likely convert fiat to crypto here if 'amount' is fiat.
         crypto_amount_to_send = float(amount)
 
-        # Send crypto to wallet
-        tx_hash = send_crypto_to_wallet(merchant_wallet, crypto_amount_to_send, payout_type)
-
-        return jsonify({"status": "success", "message": "Payout initiated", "tx_hash": tx_hash})
-    except ValueError as e: # Catch validation errors from send_crypto_to_wallet
-        print(f"CryptoService: Wallet address validation error: {e}")
-        return jsonify({"status": "failed", "message": f"Invalid wallet or currency: {e}"}), 400
+        tx_hash = send_crypto_to_wallet(
+            merchant_wallet, 
+            crypto_amount_to_send, 
+            payout_type,
+            api_key,
+            api_secret,
+            api_url
+        )
+        return {"status": "success", "message": "Payout initiated", "tx_hash": tx_hash}
+    except ValueError as e:
+        print(f"ISO8583_Crypto Module: Wallet address or currency validation error: {e}")
+        return {"status": "failed", "message": f"Wallet address or currency validation error: {e}"}
     except Exception as e:
-        print(f"CryptoService: Payout error: {e}")
-        return jsonify({"status": "failed", "message": f"Payout failed: {e}"}), 500
+        print(f"ISO8583_Crypto Module: Crypto payout failed: {e}")
+        return {"status": "failed", "message": f"Crypto payout failed: {e}"}
 
-if __name__ == '__main__':
-    print(f"Starting Crypto Payout Service on {INTERNAL_HOST}:{INTERNAL_PORT}")
-    app.run(host=INTERNAL_HOST, port=INTERNAL_PORT, debug=True) # Set debug=False for production!
+# Example usage (for testing this module independently, not for Flask app)
+if __name__ == "__main__":
+    print("Running ISO8583_Crypto Module in standalone test mode.")
+    # This part won't run when imported by Flask
+    try:
+        # Set dummy environment variables for standalone testing
+        os.environ['CRYPTO_API_KEY'] = 'TEST_API_KEY'
+        os.environ['CRYPTO_SECRET'] = 'TEST_SECRET'
+        os.environ['CRYPTO_EXCHANGE_API_URL'] = 'https://api.example.com/test'
+
+        result = perform_crypto_payout(
+            transaction_id="TEST_TXN_123",
+            amount=100.0, # Assuming this is already in crypto equivalent for this test
+            currency="USD",
+            pout_type="ERC20",
+            merchant_wallet="0xabcdef1234567890abcdef1234567890abcdef12"
+        )
+        print(f"Test Crypto Payout Result: {result}")
+    except Exception as e:
+        print(f"Test Crypto Payout Failed: {e}")
