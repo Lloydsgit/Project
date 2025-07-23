@@ -1,83 +1,95 @@
-import socket
-import json
+# ISOcrypto.py
+from flask import Flask, request, jsonify
 import os
-from web3 import Web3
-from tronpy import Tron
-from tronpy.keys import PrivateKey
-from decimal import Decimal
-from datetime import datetime
+# from your_crypto_library import convert_fiat_to_crypto, send_crypto_to_wallet # Placeholder
 
-CONFIG_PATH = 'config.json'
+app = Flask(__name__)
 
-def load_config():
-    with open(CONFIG_PATH, 'r') as f:
-        return json.load(f)
+# Internal server configuration
+INTERNAL_HOST = '0.0.0.0'
+INTERNAL_PORT = int(os.environ.get('PORT', 9001)) # Render assigns PORT, default for local
 
-config = load_config()
+# Crypto API Keys (PLACEHOLDERS! Use environment variables!)
+CRYPTO_API_KEY = os.environ.get('CRYPTO_API_KEY', 'your_crypto_api_key')
+CRYPTO_SECRET = os.environ.get('CRYPTO_SECRET', 'your_crypto_secret')
 
-def send_iso8583_transaction(message_str):
-    """Sends a pure string-based ISO8583 message over TCP to the test server and gets response."""
-    HOST = config["iso8583"]["host"]
-    PORT = config["iso8583"]["port"]
-    with socket.create_connection((HOST, PORT), timeout=10) as s:
-        s.sendall(message_str.encode())
-        data = s.recv(2048)
-        return data.decode()
+# --- Placeholder Crypto functions ---
+# In a real scenario, this would involve integrating with a crypto exchange API
+# (e.g., Binance, Coinbase) or a web3 library for direct blockchain interaction.
+def convert_fiat_to_crypto(amount_fiat, fiat_currency, crypto_currency_target):
+    """
+    Simulates converting fiat to crypto.
+    Returns the equivalent crypto amount.
+    """
+    print(f"Converting {amount_fiat} {fiat_currency} to {crypto_currency_target}...")
+    # This is a dummy conversion. Real-world rates vary.
+    # e.g., if 1 USD = 0.9 USDT, and 1 USD = 0.0003 ETH
+    if crypto_currency_target == "USDT":
+        return amount_fiat * 0.98 # Simulate a slight fee/spread
+    elif crypto_currency_target == "ETH":
+        return amount_fiat * 0.0003
+    return amount_fiat # Fallback
+    
+def send_crypto_to_wallet(wallet_address, crypto_amount, crypto_currency):
+    """
+    Simulates sending crypto to a wallet.
+    Returns a dummy transaction hash.
+    """
+    print(f"Sending {crypto_amount} {crypto_currency} to {wallet_address}...")
+    # This is where your actual API calls to a crypto exchange or web3.py would go.
+    # You'd manage gas fees, network selection (ERC20 vs TRC20), etc.
+    if not wallet_address.startswith("0x") and crypto_currency == "ERC20":
+        raise ValueError("Invalid ERC20 wallet address format")
+    if not wallet_address.startswith("T") and crypto_currency == "TRC20":
+         raise ValueError("Invalid TRC20 wallet address format")
+    
+    # Simulate success
+    import hashlib
+    tx_hash = hashlib.sha256(f"{wallet_address}{crypto_amount}{crypto_currency}{os.urandom(16)}".encode()).hexdigest()
+    return f"0x{tx_hash}"[:66] # Ethereum-like hash format
 
-def send_erc20_payout(to_address, amount_usdt):
-    """Send USDT ERC20 payout"""
-    if not Web3.is_address(to_address):
-        raise ValueError("Invalid Ethereum address")
+@app.route('/payout', methods=['POST'])
+# ROUTING URL: /payout
+# COMMAND: Receives HTTP POST with JSON payload from app.py
+def handle_payout():
+    data = request.json
+    print(f"ISOcrypto: Received payout request: {data}")
 
-    network = config["erc20"]["network"]
-    rpc_url = config["erc20"]["mainnet_rpc"] if network == "mainnet" else config["erc20"]["testnet_rpc"]
-    private_key = config["erc20"]["private_key"]
-    usdt_contract = config["erc20"]["usdt_contract"]
-    gas_price_gwei = config["erc20"].get("gas_price_gwei", 15)
+    transaction_id = data.get("transaction_id")
+    amount = data.get("amount")
+    currency = data.get("currency")
+    payout_type = data.get("payout_type") # e.g., 'ERC20', 'TRC20'
+    merchant_wallet = data.get("merchant_wallet")
 
-    w3 = Web3(Web3.HTTPProvider(rpc_url))
-    account = w3.eth.account.from_key(private_key)
-    from_addr = account.address
+    if not all([transaction_id, amount, currency, payout_type, merchant_wallet]):
+        return jsonify({"status": "failed", "message": "Missing required payout data"}), 400
 
-    nonce = w3.eth.get_transaction_count(from_addr)
-    decimals = 6
-    value = int(amount_usdt * (10 ** decimals))
+    try:
+        # Determine target crypto currency (e.g., USDT on ERC20/TRC20)
+        # This mapping might be more complex in a real system
+        if payout_type == 'ERC20':
+            target_crypto_currency = "USDT (ERC20)" # Or ETH for gas, etc.
+        elif payout_type == 'TRC20':
+            target_crypto_currency = "USDT (TRC20)"
+        else:
+            return jsonify({"status": "failed", "message": "Unsupported payout type"}), 400
 
-    abi = [
-        {
-            "constant": False,
-            "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}],
-            "name": "transfer",
-            "outputs": [{"name": "success", "type": "bool"}],
-            "type": "function"
-        }
-    ]
-    contract = w3.eth.contract(address=Web3.to_checksum_address(usdt_contract), abi=abi)
-    tx = contract.functions.transfer(to_address, value).build_transaction({
-        'chainId': 1 if network == 'mainnet' else 5,
-        'gas': 100000,
-        'gasPrice': w3.to_wei(gas_price_gwei, 'gwei'),
-        'nonce': nonce,
-    })
+        # 1. Perform crypto conversion
+        # crypto_amount = convert_fiat_to_crypto(amount, currency, target_crypto_currency)
+        # Using the original amount directly for simplicity, assuming it's already in crypto equivalent
+        crypto_amount = amount 
 
-    signed = account.sign_transaction(tx)
-    tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-    return w3.to_hex(tx_hash)
+        # 2. Send crypto to wallet
+        tx_hash = send_crypto_to_wallet(merchant_wallet, crypto_amount, payout_type)
 
-def send_trc20_payout(to_address, amount_usdt):
-    """Send USDT TRC20 payout"""
-    client = Tron(network=config["trc20"]["network"])
-    private_key = PrivateKey(bytes.fromhex(config["trc20"]["private_key"]))
-    from_addr = private_key.public_key.to_base58check_address()
-    usdt_contract = config["trc20"]["usdt_contract"]
+        return jsonify({"status": "success", "message": "Payout initiated", "tx_hash": tx_hash})
+    except ValueError as e: # Catch validation errors from send_crypto_to_wallet
+        print(f"ISOcrypto: Wallet address validation error: {e}")
+        return jsonify({"status": "failed", "message": f"Invalid wallet or currency: {e}"}), 400
+    except Exception as e:
+        print(f"ISOcrypto: Payout error: {e}")
+        return jsonify({"status": "failed", "message": f"Payout failed: {e}"}), 500
 
-    contract = client.get_contract(usdt_contract)
-    txn = (
-        contract.functions.transfer(to_address, int(amount_usdt * 1_000_000))
-        .with_owner(from_addr)
-        .fee_limit(5_000_000)
-        .build()
-        .sign(private_key)
-        .broadcast()
-    )
-    return txn['txid']
+if __name__ == '__main__':
+    print(f"ISOcrypto running on {INTERNAL_HOST}:{INTERNAL_PORT}")
+    app.run(host=INTERNAL_HOST, port=INTERNAL_PORT, debug=True) # debug=True only for dev
