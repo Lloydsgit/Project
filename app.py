@@ -2,9 +2,9 @@ from flask import Flask, render_template, request, redirect, session, url_for, s
 import random, logging, qrcode, io, os, json, hashlib, re, socket
 from datetime import datetime
 from functools import wraps
-# Assuming these are your custom modules for payout and ISO8583
-# Make sure iso8583_crypto.py exists and contains these functions
-from iso8583_crypto import send_erc20_payout, send_trc20_payout, send_iso8583_transaction, load_config
+import requests # Import the requests library for HTTP calls
+# Removed direct imports from iso8583_crypto and iso8583_server
+# from iso8583_crypto import send_erc20_payout, send_trc20_payout, send_iso8583_transaction, load_config
 from xhtml2pdf import pisa
 from werkzeug.security import generate_password_hash, check_password_hash
 # from twilio.rest import Client # Removed: Twilio Client is no longer needed
@@ -24,14 +24,13 @@ USERNAME = "blackrockadmin"
 DEFAULT_PASSWORD = "Br_3339" # Default password for the admin user
 PASSWORD_FILE = "password.json" # File to store admin credentials
 TX_LOG = "transactions.json" # File to log transaction history
-# OTP_FILE = "otp.json" # Removed: OTP file is no longer relevant
-CONFIG = load_config() # Loads configuration, likely for ISO8583 or crypto settings
+# Removed: OTP_FILE is no longer relevant
 
-# Removed: Twilio Configuration and Client Initialization
-# TWILIO_SID = "ACdb98fb2972c2ed066994ddef56de1b6f"
-# TWILIO_AUTH_TOKEN = "803463ddd413bc4d7375ac780d439195"
-# TWILIO_NUMBER = "+13515297285"
-# twilio_client = Client(TWILIO_SID, TWILIO_AUTH_TOKEN)
+# --- Service URLs (for internal communication) ---
+# In Render, these will be the names of your private services.
+# For local testing, use localhost and the defined ports.
+ISO_SERVER_URL = os.environ.get('ISO_SERVER_URL', 'http://127.0.0.1:9000')
+CRYPTO_SERVER_URL = os.environ.get('CRYPTO_SERVER_URL', 'http://127.0.0.1:9001')
 
 # Ensure password.json exists with default credentials if not present
 if not os.path.exists(PASSWORD_FILE):
@@ -73,6 +72,20 @@ def login_required(f):
 # ======================== Removed: OTP & Forgot Password Functionality ========================
 # The send_otp_sms function and the /forgot-password and /reset-password routes
 # have been entirely removed as per your request to skip all SMS/verification.
+# If you need a password reset, you'd implement a non-SMS based method.
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Placeholder for forgot password - no SMS functionality."""
+    flash("Forgot password functionality is currently disabled. Please contact support.")
+    return render_template("forgot_password.html")
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    """Placeholder for reset password - no SMS functionality."""
+    flash("Reset password functionality is currently disabled. Please contact support.")
+    return render_template("reset_password.html")
+
 
 # ======================== Core Application Routes ========================
 @app.route('/')
@@ -225,27 +238,81 @@ def auth():
         })
 
         try:
-            # Call your ISO8583 transaction processing function
-            # This function should handle communication with the ISO8583 server
-            send_iso8583_transaction(session)
+            # --- Step 1: Send authorization request to ISOserver.py ---
+            # ROUTING URL: /authorize (on the ISOserver.py service)
+            # COMMAND: HTTP POST with JSON payload
+            iso_server_response = requests.post(
+                f"{ISO_SERVER_URL}/authorize",
+                json={
+                    "card_number": session.get('pan'),
+                    "expiry": session.get('exp'),
+                    "cvv": session.get('cvv'),
+                    "amount": float(session.get('amount')),
+                    "currency": "USD", # Assuming USD for now
+                    "auth_code": code,
+                    "txn_id": txn_id,
+                    "arn": arn,
+                    "protocol": session.get('protocol')
+                },
+                timeout=30 # Timeout for ISO server response
+            )
+            iso_server_response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+            iso_result = iso_server_response.json()
 
-            # Perform crypto payout if ISO8583 transaction is successful
-            if session['payout_type'] == 'ERC20':
-                send_erc20_payout(session['wallet'], float(session['amount']))
-            elif session['payout_type'] == 'TRC20':
-                send_trc20_payout(session['wallet'], float(session['amount']))
+            if iso_result.get("status") == "approved":
+                print(f"ISO Authorization successful: {iso_result.get('message')}")
+                flash("Card authorization successful!")
 
-            # Removed: Twilio SMS sending for success
-            print(f"Transaction successful. TXN ID: {txn_id}")
+                # --- Step 2: If authorized, trigger crypto payout via crypto_payout_service.py ---
+                # ROUTING URL: /payout (on the crypto_payout_service.py service)
+                # COMMAND: HTTP POST with JSON payload
+                crypto_payout_response = requests.post(
+                    f"{CRYPTO_SERVER_URL}/payout",
+                    json={
+                        "transaction_id": iso_result.get("transaction_id"), # Use transaction ID from ISO response
+                        "amount": float(session.get('amount')),
+                        "currency": "USD", # Or dynamically get currency
+                        "payout_type": session.get('payout_type'),
+                        "merchant_wallet": session.get('wallet')
+                    },
+                    timeout=60 # Timeout for crypto payout
+                )
+                crypto_payout_response.raise_for_status()
+                payout_result = crypto_payout_response.json()
 
+                if payout_result.get("status") == "success":
+                    print(f"Crypto Payout successful! Tx Hash: {payout_result.get('tx_hash')}")
+                    flash("Crypto payout completed successfully!")
+                else:
+                    print(f"Crypto Payout failed: {payout_result.get('message')}")
+                    flash(f"Crypto Payout failed: {payout_result.get('message')}")
+                    # Even if payout fails, the card transaction might still be authorized.
+                    # You might want a different flow here (e.g., manual intervention).
+                    # For now, we'll treat it as a full rejection for simplicity.
+                    return redirect(url_for('rejected', code="CRYPTO_FAIL", reason=payout_result.get('message', 'Crypto Payout Failed')))
+            else:
+                print(f"ISO Authorization failed: {iso_result.get('message')}")
+                flash(f"Card authorization failed: {iso_result.get('message')}")
+                return redirect(url_for('rejected', code=iso_result.get('response_code', '00'), reason=iso_result.get('message', 'Authorization Declined')))
+
+        except requests.exceptions.Timeout:
+            flash("Service communication timed out. Please check services and try again.")
+            print("Service communication timed out.")
+            return redirect(url_for('rejected', code="SVC_TIMEOUT", reason="Internal Service Communication Timeout"))
+        except requests.exceptions.ConnectionError as e:
+            flash(f"Could not connect to internal payment service. Error: {e}")
+            print(f"Connection error to internal service: {e}")
+            return redirect(url_for('rejected', code="SVC_CONN_ERR", reason=f"Internal Service Unreachable: {e}"))
+        except requests.exceptions.RequestException as e:
+            flash(f"An HTTP error occurred during payment processing: {e}")
+            print(f"HTTP Request error during payment processing: {e}")
+            return redirect(url_for('rejected', code="HTTP_ERR", reason=f"Payment Processing Error: {e}"))
         except Exception as e:
-            # Removed: Twilio SMS sending for failure
-            print(f"Transaction failed for TXN ID: {txn_id}. Error: {e}")
-            flash(f"Payout Error: {str(e)}")
-            # Redirect to rejected page with error details
-            return redirect(url_for('rejected', code="91", reason=str(e)))
+            flash(f"An unexpected error occurred during transaction: {e}")
+            print(f"Unexpected error in auth route: {e}")
+            return redirect(url_for('rejected', code="UNEXPECTED_ERR", reason=f"Unexpected Error: {e}"))
 
-        # Log successful transaction to file
+        # Log successful transaction to file (after both ISO and Crypto are successful)
         with open(TX_LOG, "r+") as f:
             history = json.load(f)
             history.append({
@@ -256,7 +323,7 @@ def auth():
             f.seek(0) # Rewind to the beginning of the file
             json.dump(history, f, indent=2) # Write updated history
 
-        # Redirect to success page
+        # Redirect to success page only if both authorization and payout were successful
         return redirect(url_for('success'))
     return render_template('auth.html', expected_length=expected_length) # Pass expected_length to template
 
