@@ -8,22 +8,25 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from fpdf import FPDF
 
 app = Flask(__name__)
-app.secret_key = 'rutland_secret_key_8583'
+app.secret_key = 'blackrock_secret_key_8583'
 logging.basicConfig(level=logging.INFO)
 
-# Configuration
-USERNAME = "blackrockadmin"
+# Constants
 PASSWORD_FILE = "password.json"
+TXN_FILE = "transactions.json"
 CONFIG = load_config()
-TX_LOG = "transactions.json"
+USERNAME = "blackrockadmin"
+DEFAULT_PASSWORD = "Br_3339"
 
-# Ensure password file exists with username + hashed password
+# Ensure password.json
 if not os.path.exists(PASSWORD_FILE):
     with open(PASSWORD_FILE, "w") as f:
-        json.dump({
-            "username": USERNAME,
-            "password": generate_password_hash("Br_3339")
-        }, f)
+        json.dump({"password": hashlib.sha256(DEFAULT_PASSWORD.encode()).hexdigest()}, f)
+
+# Ensure transaction.json
+if not os.path.exists(TXN_FILE):
+    with open(TXN_FILE, "w") as f:
+        json.dump([], f)
 
 def check_password(raw):
     with open(PASSWORD_FILE) as f:
@@ -90,17 +93,13 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username_input = request.form['username']
-        password_input = request.form['password']
-        with open(PASSWORD_FILE) as f:
-            creds = json.load(f)
-        if username_input == creds.get('username') and check_password_hash(creds.get('password', ''), password_input):
+        user = request.form.get('username')
+        passwd = request.form.get('password')
+        if user == USERNAME and check_password(passwd):
             session['logged_in'] = True
-            return redirect(url_for('admin_dashboard'))
-        else:
-            flash("Invalid username or password", "danger")
-            return redirect(url_for('login'))
-    return render_template('admin_login.html')
+            return redirect(url_for('protocol'))
+        flash("Invalid username or password.")
+    return render_template('login.html')
 
 @app.route('/logout')
 def logout():
