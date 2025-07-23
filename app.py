@@ -17,10 +17,13 @@ PASSWORD_FILE = "password.json"
 CONFIG = load_config()
 TX_LOG = "transactions.json"
 
-# Ensure password file exists
+# Ensure password file exists with username + hashed password
 if not os.path.exists(PASSWORD_FILE):
     with open(PASSWORD_FILE, "w") as f:
-        json.dump({"password": generate_password_hash("Br_3339")}, f)
+        json.dump({
+            "username": USERNAME,
+            "password": generate_password_hash("Br_3339")
+        }, f)
 
 def check_password(raw):
     with open(PASSWORD_FILE) as f:
@@ -87,13 +90,17 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = request.form.get('username')
-        passwd = request.form.get('password')
-        if user == USERNAME and check_password(passwd):
+        username_input = request.form['username']
+        password_input = request.form['password']
+        with open(PASSWORD_FILE) as f:
+            creds = json.load(f)
+        if username_input == creds.get('username') and check_password_hash(creds.get('password', ''), password_input):
             session['logged_in'] = True
-            return redirect(url_for('protocol'))
-        flash("Invalid username or password.")
-    return render_template('login.html')
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash("Invalid username or password", "danger")
+            return redirect(url_for('login'))
+    return render_template('admin_login.html')
 
 @app.route('/logout')
 def logout():
