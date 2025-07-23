@@ -1,0 +1,137 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, #0d0d0d, #1a1a1a);
+  color: #ffffff;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 20px;
+}
+
+/* Logo */
+.logo {
+  width: 120px;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+/* Container */
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Centering box */
+.center-box {
+  margin-top: 80px;
+  text-align: center;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="email"],
+select {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 1rem;
+}
+
+input::placeholder {
+  color: #ccc;
+}
+
+select {
+  color: #000;
+}
+
+/* Buttons */
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background-color: #e53935; /* red */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background-color: #f44336;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: rgba(255,255,255,0.05);
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+th {
+  color: #e53935;
+}
+
+/* Flash message */
+.flash {
+  margin-top: 10px;
+  color: #ff5252;
+  font-weight: bold;
+}
+
+/* Footer links */
+.footer-links {
+  margin-top: 10px;
+}
+
+.footer-links a {
+  color: #e53935;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+/* Buttons Group */
+.btn-group {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.btn-group button {
+  background-color: #1a237e;
+  color: #fff;
+  padding: 10px 18px;
+  margin: 5px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-group button:hover {
+  background-color: #3949ab;
+}

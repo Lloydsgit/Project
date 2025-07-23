@@ -1,0 +1,19 @@
+{
+  "iso8583": {
+    "host": "127.0.0.1",
+    "port": 8583
+  },
+  "erc20": {
+    "network": "testnet",
+    "mainnet_rpc": "https://mainnet.infura.io/v3/YOUR_INFURA_KEY",
+    "testnet_rpc": "https://goerli.infura.io/v3/YOUR_INFURA_KEY",
+    "usdt_contract": "0xD9BA894E0097f8cC2BBc9D24D308b98e36dc6D02",
+    "private_key": "YOUR_ERC20_PRIVATE_KEY",
+    "gas_price_gwei": 10
+  },
+  "trc20": {
+    "network": "nile",
+    "usdt_contract": "TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj",
+    "private_key": "YOUR_TRC20_PRIVATE_KEY"
+  }
+}

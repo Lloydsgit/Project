@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: blackrock-web
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:10000
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+  - type: worker
+    name: iso8583-server
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python iso8583_server.py

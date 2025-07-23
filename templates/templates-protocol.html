@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Select Protocol</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container center-box">
+    <h2>Select POS Protocol</h2>
+    <form method="POST">
+      <select name="protocol" required>
+        {% for proto in protocols %}
+          <option value="{{ proto }}">{{ proto }}</option>
+        {% endfor %}
+      </select><br>
+      <button type="submit">Continue</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Select Payout</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container center-box">
+    <h2>Select Payout Method</h2>
+    <form method="POST">
+      <label>
+        <input type="radio" name="method" value="ERC20" required> ERC20
+      </label>
+      <input type="text" name="erc20_wallet" placeholder="ERC20 Wallet Address"><br>
+      <label>
+        <input type="radio" name="method" value="TRC20" required> TRC20
+      </label>
+      <input type="text" name="trc20_wallet" placeholder="TRC20 Wallet Address"><br>
+      <button type="submit">Continue</button>
+    </form>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+  </div>
+</body>
+</html>

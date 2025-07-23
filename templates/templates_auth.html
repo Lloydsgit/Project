@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Enter Auth Code</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container center-box">
+    <h2>Authorization Code</h2>
+    <form method="POST">
+      <input type="text" name="auth_code" placeholder="Enter Auth Code" required><br>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+</body>
+</html>

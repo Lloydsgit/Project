@@ -1,0 +1,15 @@
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <title>Enter Card Details</title> <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> <style> body { background: #000; color: #fff; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; } .card-container { background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 30px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); backdrop-filter: blur(6px); width: 300px; } h2 { text-align: center; color: #ff1744; } input[type="text"] { width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #444; border-radius: 6px; background: #111; color: #fff; font-size: 16px; } .expiry-group { display: flex; justify-content: space-between; align-items: center; } .expiry-group input { width: 45%; } .expiry-slash { color: white; padding: 0 5px; font-size: 20px; } button { background-color: #ff1744; color: white; padding: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; } button:hover { background-color: #ff4569; } a { display: block; margin-top: 15px; text-align: center; color: #fff; text-decoration: underline; } </style> </head> <body> <div class="card-container"> <h2>Enter Card Details</h2> <form method="POST"> <input type="text" name="pan" placeholder="Card Number" maxlength="19" required />
+php-template
+Copy
+Edit
+  <div class="expiry-group">
+    <input type="text" name="mm" placeholder="MM" maxlength="2" pattern="\d{2}" required />
+    <span class="expiry-slash">/</span>
+    <input type="text" name="yy" placeholder="YY" maxlength="2" pattern="\d{2}" required />
+  </div>
+
+  <input type="text" name="cvv" placeholder="CVV" maxlength="4" required />
+  <button type="submit">Next ➡️</button>
+</form>
+<a href="{{ url_for('logout') }}">Logout</a>
+</div> </body> </html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Transaction Receipt</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      background: #fff;
+      color: #000;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+    }
+    .receipt-container {
+      max-width: 360px;
+      margin: auto;
+      border: 1px dashed #000;
+      padding: 20px;
+      background: #fff;
+    }
+    .receipt-logo {
+      display: block;
+      margin: 0 auto;
+      width: 80px;
+    }
+    .receipt-section {
+      margin-bottom: 15px;
+    }
+    .receipt-section h2 {
+      font-size: 1rem;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .receipt-section p {
+      margin: 4px 0;
+    }
+    .btn-group {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .btn-group button {
+      background: #1a237e;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      margin: 4px;
+      cursor: pointer;
+    }
+    @media print {
+      .btn-group {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt-container">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" class="receipt-logo">
+    <div class="receipt-section">
+      <h2>Black Rock Terminal</h2>
+      <p><strong>Date:</strong> {{ timestamp }}</p>
+      <p><strong>Txn ID:</strong> {{ txn_id }}</p>
+      <p><strong>Amount:</strong> ${{ amount }}</p>
+      <p><strong>Card:</strong> **** **** **** {{ pan }}</p>
+      <p><strong>Wallet:</strong> {{ wallet }}</p>
+      <p><strong>Auth Code:</strong> {{ auth_code }}</p>
+      <p><strong>Status:</strong> {{ field39 }}</p>
+    </div>
+    <div class="btn-group">
+      <button onclick="window.print()">🖨 Print</button>
+      <a href="{{ url_for('protocol') }}"><button>↩ New Transaction</button></a>
+    </div>
+  </div>
+</body>
+</html>
