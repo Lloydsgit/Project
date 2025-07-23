@@ -6,3 +6,4 @@ qrcode
 reportlab
 eth-account
 requests
+fpdf
