@@ -1,17 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Enter Amount</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <title>Enter Amount</title>
 </head>
 <body>
-  <div class="container center-box">
     <h2>Enter Amount</h2>
     <form method="POST">
-      <input type="number" name="amount" step="0.01" min="1" placeholder="Enter amount" required><br>
-      <button type="submit">Continue</button>
+        <input type="text" name="amount" placeholder="Amount (USD)" required><br><br>
+        <button type="submit">Proceed to Payout</button>
     </form>
-  </div>
 </body>
 </html>
