@@ -110,6 +110,12 @@ def login():
         user = request.form.get('username')
         passwd = request.form.get('password')
 
+        if check_password(user, passwd):
+            session['logged_in'] = True
+            return redirect(url_for('protocol'))
+        flash("Invalid username or password.")
+    return render_template('login.html')
+
         # Load stored credentials
         with open(PASSWORD_FILE) as f:
             stored = json.load(f)
@@ -178,18 +184,6 @@ FIELD_39_RESPONSES = {
     "91": "Issuer Inoperative",
     "92": "Invalid Terminal Protocol"
 }
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        user = request.form.get('username')
-        passwd = request.form.get('password')
-
-        if check_password(user, passwd):
-            session['logged_in'] = True
-            return redirect(url_for('protocol'))
-        flash("Invalid username or password.")
-    return render_template('login.html')
 
 @app.route('/protocol', methods=['GET', 'POST'])
 @login_required
