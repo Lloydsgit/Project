@@ -1,27 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Login - Black Rock Pay</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <title>Admin Login - BlackRock</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <div class="container center-box">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" class="logo" alt="Black Rock Pay">
-    <h2>Admin Login</h2>
-    <form method="POST">
-      <input type="text" name="username" placeholder="Username" required><br>
-      <input type="password" name="password" placeholder="Password" required><br>
-      <button type="submit">Login</button>
-    </form>
-    <div class="footer-links">
-      <a href="{{ url_for('change_password') }}">Change Password</a>
+    <div class="login-container">
+        <h2>BlackRock Admin Login</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="flashes">
+              {% for msg in messages %}
+                <li>{{ msg }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <input type="password" name="password" placeholder="Password" required><br>
+            <button type="submit">Login</button>
+        </form>
+
+        <div class="auth-links">
+            <a href="{{ url_for('forgot_password') }}">Forgot Password?</a><br>
+            <a href="{{ url_for('reset_password') }}">Reset Password (OTP)</a>
+        </div>
     </div>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="flash">{{ messages[0] }}</div>
-      {% endif %}
-    {% endwith %}
-  </div>
 </body>
 </html>
